@@ -8,6 +8,7 @@ class Action(StrEnum):
     REGISTER_USER = "register_user"
     REGISTER_SELLER = "register_seller"
     CATALOG = "catalog"
+    CATEGORY = "category"
     SEARCH = "search"
     FAVORITES = "favorites"
     ORDERS = "orders"
@@ -18,12 +19,20 @@ class ActionCallback(CallbackData, prefix="action"):
 
 
 class Page(StrEnum):
-    CATALOG = "catalog"
+    SERVICE = "service"
     CATEGORY = "category"
-    FAVORITES = "favorites"
 
 
 class PaginateCallback(CallbackData, prefix="page"):
     page: Page
     offset: int
     limit: int
+    category_id: int | None = None
+
+
+class CatalogItemCallback(CallbackData, prefix="item"):
+    page: Page
+    id: int
+    offset: int
+    limit: int
+    category_id: int | None = None

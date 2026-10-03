@@ -5,7 +5,7 @@ from aiogram.types import CallbackQuery, Message
 import domain
 from adapters.uow import UnitOfWork
 from callback_factory import Action, ActionCallback
-from keyboards import get_inline_kb
+from keyboards import get_action_kb
 from lexicon import core
 from domain import AlreadyExistsError
 from usecases.user import create_user, create_seller
@@ -13,10 +13,10 @@ from usecases.user import create_user, create_seller
 
 router = Router(name="command_core")
 
-async def get_menu_appropriate_user(uow, received_obj: Message | CallbackQuery):
+async def get_menu_appropriate_user(uow: UnitOfWork, received_obj: Message | CallbackQuery):
     try:
         async with uow:
-            await uow.db.read_one(
+            await uow.generic.read_one(
                 uow,
                 telegram_id=received_obj.from_user.id,
                 with_raise=True
@@ -32,7 +32,7 @@ async def get_menu_appropriate_user(uow, received_obj: Message | CallbackQuery):
 
 
 def get_main_menu():
-    return get_inline_kb(
+    return get_action_kb(
         Action.CATALOG,
         Action.SEARCH,
         Action.FAVORITES,
@@ -42,7 +42,7 @@ def get_main_menu():
 
 
 def get_registration_menu():
-    return get_inline_kb(
+    return get_action_kb(
         Action.REGISTER_USER,
         Action.REGISTER_SELLER,
         width=1,
@@ -66,7 +66,7 @@ async def process_command_start(
 async def process_command_help(message: Message):
     await message.answer(
         text=core.HELP,
-        reply_markup=get_inline_kb(Action.MENU),
+        reply_markup=get_action_kb(Action.MENU),
     )
 
 
@@ -141,5 +141,5 @@ async def process_menu(
 async def process_help(callback: CallbackQuery):
     await callback.message.edit_text(
         text=core.HELP,
-        reply_markup=get_inline_kb(Action.MENU),
+        reply_markup=get_action_kb(Action.MENU),
     )

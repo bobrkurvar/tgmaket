@@ -2,8 +2,11 @@ import logging
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.filters.callback_data import CallbackData
 
-from callback_factory import Action, ActionCallback, PaginateCallback, Page
+from callback_factory import Action, ActionCallback, PaginateCallback, Page, CatalogItemCallback
+from domain import Service, Category
+from collections.abc import Collection
 
 log = logging.getLogger(__name__)
 
@@ -19,18 +22,17 @@ ACTION_TEXT = {
     Action.REGISTER_SELLER: buttons.BECOME_SELLER,
 }
 
-def get_inline_kb(
-    *actions: Action,
+
+def build_inline_kb(
+    *buttons: tuple[str, CallbackData],
     width: int = 1,
-) -> InlineKeyboardMarkup:
+):
     builder = InlineKeyboardBuilder()
 
-    for action in actions:
+    for text, callback_data in buttons:
         builder.button(
-            text=ACTION_TEXT[action],
-            callback_data=ActionCallback(
-                action=action,
-            ).pack(),
+            text=text,
+            callback_data=callback_data,
         )
 
     builder.adjust(width)
@@ -38,35 +40,119 @@ def get_inline_kb(
     return builder.as_markup()
 
 
-def get_pagination_kb(
-    *,
+def get_action_kb(
+    *actions: Action,
+    width: int = 1,
+):
+    return build_inline_kb(
+        *(
+            (
+                ACTION_TEXT[action],
+                ActionCallback(action=action),
+            )
+            for action in actions
+        ),
+        width=width,
+    )
+
+
+
+def get_catalog_kb(
     page: Page,
+    items: Collection[Service] | Collection[Category],
     offset: int,
     limit: int,
     total: int,
-) -> InlineKeyboardMarkup:
+    category_id: int | None = None
+):
+
+
     builder = InlineKeyboardBuilder()
+    if page == page.SERVICE:
+        for item in items:
+            builder.button(
+                text=item.title,
+                callback_data=CatalogItemCallback(
+                    id=item.id,
+                    page=page,
+                    offset=offset,
+                    limit=limit,
+                    category_id=category_id,
+                ),
+            )
+
+    elif page == Page.CATEGORY:
+        for item in items:
+            builder.button(
+                text=item.name,
+                callback_data=CatalogItemCallback(
+                    id=item.id,
+                    page=page,
+                    offset=offset,
+                    limit=limit,
+                    category_id=category_id,
+                ),
+            )
+    else:
+        raise ValueError(f"Неизвестная страница каталога: {page}")
+
+    builder.adjust(1)
+
+    # пагинация
+    pagination = []
 
     if offset > 0:
-        builder.button(
-            text="←",
-            callback_data=PaginateCallback(
-                offset=max(0, offset - limit),
-                limit=limit,
-                page=page
-            ).pack(),
+        pagination.append(
+            InlineKeyboardButton(
+                text="←",
+                callback_data=PaginateCallback(
+                    page=page,
+                    offset=max(0, offset - limit),
+                    limit=limit,
+                    category_id=category_id,
+                ).pack(),
+            )
         )
 
     if offset + limit < total:
-        builder.button(
-            text="→",
-            callback_data=PaginateCallback(
-                offset=offset + limit,
-                limit=limit,
-                page=page
-            ).pack(),
+        pagination.append(
+            InlineKeyboardButton(
+                text="→",
+                callback_data=PaginateCallback(
+                    page=page,
+                    offset=offset + limit,
+                    limit=limit,
+                    category_id=category_id,
+                ).pack(),
+            )
         )
 
-    builder.adjust(2)
+    if pagination:
+        builder.row(*pagination)
 
     return builder.as_markup()
+
+
+def get_service_kb(
+    *,
+    offset: int,
+    limit: int,
+    category_id: int | None = None,
+):
+    return build_inline_kb(
+        (
+            buttons.BACK,
+            PaginateCallback(
+                page=Page.SERVICE,
+                offset=offset,
+                limit=limit,
+                category_id=category_id,
+            ),
+        ),
+        (
+            buttons.MENU,
+            ActionCallback(
+                action=Action.MENU,
+            ),
+        ),
+    )

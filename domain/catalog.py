@@ -6,7 +6,6 @@ class Category:
     id: int
     name: str
     position: int
-    is_active: bool
 
 
 @dataclass
@@ -19,4 +18,3 @@ class Service:
     price_from: Decimal
     image: str | None
     position: int
-    is_active: bool

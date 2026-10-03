@@ -6,7 +6,7 @@ async def create(
     service: Service,
 ) -> Service:
     async with uow:
-        return await uow.db.create(
+        return await uow.generic.create(
             domain_obj=service,
         )
 
@@ -16,7 +16,7 @@ async def read(
     **filters,
 ) -> tuple[Service, ...]:
     async with uow:
-        return await uow.db.read(
+        return await uow.generic.read(
             Service,
             **filters,
         )

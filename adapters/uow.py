@@ -2,7 +2,8 @@ import logging
 from contextlib import asynccontextmanager
 
 from adapters.db_provider import DbProvider
-from adapters.generic_repo import GenericRepository
+from adapters.repo import GenericRepository
+from adapters.repo import CatalogRepository
 
 log = logging.getLogger(__name__)
 
@@ -17,15 +18,15 @@ class UnitOfWork:
         self._session_factory = (
             session_factory if session_factory else provider.session_factory
         )
-        self.db = None
-        self.order = None
-        self.product = None
+        self.generic = None
+        self.catalog = None
 
     async def __aenter__(self):
         self.session_ctx = self._session_factory.begin()
         self.session = await self.session_ctx.__aenter__()
 
-        self.db = GenericRepository(session=self.session, registry=self._registry)
+        self.generic = GenericRepository(session=self.session, registry=self._registry)
+        self.catalog = CatalogRepository(session=self.session, registry=self._registry)
 
         return self
 
@@ -38,7 +39,8 @@ class UnitOfWork:
         finally:
             await self.session_ctx.__aexit__(exc_type, exc_val, exc_tb)
             self.session = None
-            self.db = None
+            self.generic = None
+            self.catalog = None
 
     async def commit(self):
         await self.session.commit()

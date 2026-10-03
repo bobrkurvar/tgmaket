@@ -29,10 +29,6 @@ class Category(Base):
         default=0,
     )
 
-    is_active: Mapped[bool] = mapped_column(
-        nullable=False,
-        default=True,
-    )
 
 
 class Service(Base):
@@ -79,10 +75,6 @@ class Service(Base):
         default=0,
     )
 
-    is_active: Mapped[bool] = mapped_column(
-        nullable=False,
-        default=True,
-    )
 
 class User(Base):
     __tablename__ = "users"

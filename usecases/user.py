@@ -6,7 +6,7 @@ async def get_by_id(
     telegram_id: int,
 ) -> User | Seller | None:
     async with uow:
-        return await uow.db.read_one(
+        return await uow.generic.read_one(
             User,
             telegram_id=telegram_id,
         )
@@ -17,12 +17,12 @@ async def create_user(
     user: User,
 ) -> User:
     async with uow:
-        return await uow.db.create(user)
+        return await uow.generic.create(user)
 
 
 async def create_seller(
-    uow: UnitOfWork,
+    uow,
     seller: Seller,
 ) -> Seller:
     async with uow:
-        return await uow.db.create(seller)
+        return await uow.generic.create(seller)

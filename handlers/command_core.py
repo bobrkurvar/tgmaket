@@ -13,7 +13,23 @@ from usecases.user import create_user, create_seller
 
 router = Router(name="command_core")
 
-def get_menu_appropriate_user(uow):
+async def get_menu_appropriate_user(uow, received_obj: Message | CallbackQuery):
+    try:
+        async with uow:
+            await uow.db.read_one(
+                uow,
+                telegram_id=received_obj.from_user.id,
+                with_raise=True
+            )
+    except AlreadyExistsError:
+        body = dict(text=core.START, reply_markup=get_registration_menu())
+        if isinstance(received_obj, Message):
+            await received_obj.answer(**body)
+        else:
+            await received_obj.message.edit_text(**body)
+        return
+
+
 
 def get_main_menu():
     return get_inline_kb(
@@ -38,19 +54,7 @@ async def process_command_start(
     message: Message,
     uow: UnitOfWork,
 ):
-    try:
-        async with uow:
-            await uow.db.read_one(
-                uow,
-                telegram_id=message.from_user.id,
-                with_raise=True
-            )
-    except AlreadyExistsError:
-        await message.answer(
-            text=core.START,
-            reply_markup=get_registration_menu(),
-        )
-        return
+    await get_menu_appropriate_user(uow=uow, received_obj=message)
 
     await message.answer(
         text=core.WELCOME_BACK,
@@ -121,18 +125,7 @@ async def process_menu(
     callback: CallbackQuery,
     uow: UnitOfWork,
 ):
-    try:
-        async with uow:
-            await uow.db.read_one(
-                id=callback.from_user.id,
-                with_raise=True
-            )
-    except AlreadyExistsError:
-        await callback.message.edit_text(
-            text=core.START,
-            reply_markup=get_registration_menu(),
-        )
-        return
+    await get_menu_appropriate_user(uow=uow, received_obj=callback)
 
     await callback.message.edit_text(
         text=core.WELCOME_BACK,
